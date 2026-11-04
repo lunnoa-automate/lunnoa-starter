@@ -4,9 +4,9 @@
 
 ## Goal
 
-## Users & auth pattern
+## Users
 
-<!-- Who uses the app? server (Pattern A: app holds an API key) or user (Pattern B: people sign in with Lunnoa). -->
+<!-- Who signs in? They are Lunnoa users (invite, SSO, or SCIM). The app does not keep its own login. -->
 
 ## Triggers
 

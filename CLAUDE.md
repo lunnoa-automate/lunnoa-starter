@@ -25,10 +25,11 @@ with `@lunnoa/client`. The human may not be a developer: explain in plain langua
 
 ## Hard rules
 
-- Never put `lna_` keys in browser code, `'use client'` files, or `NEXT_PUBLIC_*` vars.
-  Pattern A calls go through `lib/lunnoa.ts` (server only).
-- `LUNNOA_AUTH_MODE` picks the auth pattern: `server` (Pattern A, API key on the
-  server) or `user` (Pattern B, browser login). Keep both paths working.
+- People sign in as Lunnoa users (`app/user-workflows.tsx`). Do not call Lunnoa
+  with `LUNNOA_API_KEY` on their behalf.
+- `LUNNOA_API_KEY` is for CLI discovery and deploy only. Never put `lna_` keys
+  in browser code, `'use client'` files, or `NEXT_PUBLIC_*` vars.
+- The deployment must allow this app's origin via `CORS_ALLOWED_ORIGINS`.
 - Never invent catalogue action ids; get them from `tools list` / `tools get <id> --json`.
 - Agents have no schedules or webhooks; wrap them in a workflow.
 - Connections and OAuth secrets stay in Lunnoa; never ask for them in this app.

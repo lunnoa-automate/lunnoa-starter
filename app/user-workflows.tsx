@@ -6,7 +6,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 
 import { ErrorNote, WorkflowList } from './workflow-list';
 
-/** Pattern B: the browser signs in as a Lunnoa user and calls Lunnoa directly with their JWT. */
+/** The browser signs in as a Lunnoa user and calls Lunnoa directly with their JWT. */
 export function UserWorkflows({ baseUrl }: { baseUrl: string }) {
   if (!baseUrl) return <ErrorNote message="Set LUNNOA_URL in .env (see .env.example)." />;
   return (
