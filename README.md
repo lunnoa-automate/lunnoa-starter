@@ -1,6 +1,6 @@
 # Lunnoa starter
 
-The quickest way to build your own app on top of [Lunnoa Automate](https://lunnoa.com) with an AI coding agent (Claude Code, Cursor, Codex).
+The quickest way to build your own app on top of [Lunnoa](https://lunnoa.com) with an AI coding agent (Claude Code, Cursor, Codex).
 
 It is deliberately small: a Next.js app that connects to your Lunnoa workspace and lists its workflows. Your coding agent adds the rest, guided by the Lunnoa skills that `npm install` puts into `.claude/skills/` and `.cursor/skills/`.
 
@@ -25,7 +25,6 @@ npm install
 | `LUNNOA_URL` | Your Lunnoa address |
 | `LUNNOA_AUTH_MODE` | `server` or `user` (see below) |
 | `LUNNOA_API_KEY` | An `lna_...` key from **Adminspace → API keys**. Ask for a minimal role, not Admin |
-| `LUNNOA_PROJECT_ID` | Only needed when your agent deploys workflows or agents |
 
 Run `npm run dev` and open http://localhost:3000. If you see your workflows, you are connected.
 
