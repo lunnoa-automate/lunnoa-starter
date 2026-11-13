@@ -8,43 +8,80 @@ with `@lunnoa/client`. The human may not be a developer: explain in plain langua
 - If `.claude/skills/` (or `.cursor/skills/`) is missing, run `npm install`.
   It copies the Lunnoa skills that match the installed SDK version.
 - If `.env` is missing, copy `.env.example` to `.env` and ask the human for the values.
+- If `lunnoa/lunnoa.lock.json` is missing, nothing was pushed from this repo yet.
+  `npx lunnoa-client push` creates the example workflow so the app's Run button works.
+
+## Project layout
+
+```text
+app/                         Next.js pages and components (your app code)
+  page.tsx                   imports the workflow files this app runs
+  user-workflows.tsx         sign-in as a Lunnoa user, workspace workflows with their sync badge
+  run-workflow.tsx           runs a workflow from lunnoa/ by slug, form built from its trigger inputs
+  workflow-list.tsx          workflow list and the sync badge
+lib/
+  lunnoa.ts                  turns a workflow file into props for client components
+  lunnoa.generated.ts        typed client from `npm run lunnoa:codegen` (when you need it)
+lunnoa/                      agent and workflow definitions, synced with Lunnoa
+  agents/<slug>.json         one agent; its prompt is in <slug>.instructions.md
+  workflows/<slug>.json      one workflow; hello-lunnoa.json is an example to replace
+  lunnoa.lock.json           written by the first push or pull; commit it
+BRIEF.md                     the build brief you write with the human
+```
+
+Only definition files live in `lunnoa/`. App code lives in `app/` and `lib/`
+and refers to agents and workflows by slug. Pull and push never touch app code.
+Codegen goes to `lib/` (`npm run lunnoa:codegen`), not `src/lunnoa`.
 
 ## How to build a feature
 
 1. Load the **lunnoa-solution-design** skill first. Interview the human.
 2. Reuse before you create. Inspect the workspace (reads `.env`):
-   - `npx lunnoa-client entity-types list --json`
-   - `npx lunnoa-client tables list --json`
-   - `npx lunnoa-client workflows list --json`
-   - `npx lunnoa-client agents list --json`
+   - `npx lunnoa-client status` (what is in `lunnoa/` and what changed in the UI)
+   - `npx lunnoa-client workflows list --json` and `agents list --json` (slug and `codeSource`)
+   - `npx lunnoa-client entity-types list --json` and `tables list --json`
    - `npx lunnoa-client tools list --for-agent --json`
+   To change an agent or workflow that already exists in Lunnoa, `npx lunnoa-client pull <slug>` and edit that file.
 3. Write or update `BRIEF.md` and get the human's approval **before coding**.
-4. Implement with the **lunnoa-client** skill.
-5. Build in small slices. End each slice with a plain-language check the
-   human can do (e.g. "open /invoices and you should see 3 rows").
+4. Implement with the **lunnoa-client** skill, in small slices:
+   - agents and workflows as JSON in `lunnoa/` (see "Agents and workflows"), then `npx lunnoa-client push`;
+   - app code in `app/` that uses them by slug (see "Use a definition in app code").
+5. End each slice with a plain-language check the human can do (e.g. "open the app, enter a
+   name, press Run, and you should see Hello, Ada").
 
 ## Agents and workflows
 
-Keep agent and workflow definitions in `lunnoa/` as JSON.
+Keep agent and workflow definitions in `lunnoa/` as JSON. Start from the shape of
+`lunnoa/workflows/hello-lunnoa.json`. Its `$schema` line gives the editor validation.
 
-```text
-lunnoa/agents/<slug>.json
-lunnoa/agents/<slug>.instructions.md
-lunnoa/workflows/<slug>.json
-lunnoa/lunnoa.lock.json
-```
-
+- Take catalogue ids from `tools list` / `tools get <id> --json` and model ids from `ai-connections list --json`. Never invent them.
+- Give every step a `key`. Later steps and the app read its output with `={{step:<key>,…}}` or by that key. Trigger inputs are `={{step:trigger,<input id>}}`.
+- An agent's prompt goes in `lunnoa/agents/<slug>.instructions.md`; the JSON holds `"instructions": { "file": "<slug>.instructions.md" }`.
 - Run `npx lunnoa-client status` before editing, and `npx lunnoa-client pull` before `npx lunnoa-client push`.
-- Commit `lunnoa/lunnoa.lock.json` with the JSON files.
+- Commit `lunnoa/lunnoa.lock.json` with the JSON files. Push rewrites each file the way Lunnoa stored it; commit that too.
+- Deleting a file does not delete the agent or workflow in Lunnoa. Ask the human to delete it in the UI.
 - Use a TypeScript `defineAgent` or `defineWorkflow` file only when the definition needs code. Deploy it with `npx lunnoa-client agents deploy` or `npx lunnoa-client workflows deploy`. That locks the resource in the UI (`codeSource: generated`). JSON push sets `codeSource: synced`. `codeSource` replaces `managedByCode` on agents and workflows.
 - Do not pass `--force` unless the human agrees. A conflict means the file and the UI both changed. Read the diff (`--- local` / `+++ server`) and ask.
 - A scheduled pull that opens a pull request, and a push on main, are in the Lunnoa docs: [Sync agents and workflows with the UI](https://docs.lunnoa.com/guides/develop/client/sync). Do not add that GitHub workflow to this repo.
+
+## Use a definition in app code
+
+The example follows this pattern. Copy it for new workflows.
+
+1. Import the file in a server component and turn it into props: `appWorkflow(file)` from
+   `lib/lunnoa.ts` (`app/page.tsx`). It reads the slug, the Manually Run inputs and the last step's key.
+2. In the client, list workflows with the signed-in user's session
+   (`expansion: ['slug', 'codeSyncStatus']`) and find the one with that slug. Ids differ per
+   deployment. Never hard-code them.
+3. Run it with `client.workflows.executeAndWait(id, inputs, { expansion: ['nodes'] })` and read the
+   step output by `key` from `execution.nodes` (`app/run-workflow.tsx`).
+4. Never upsert or push from the app. Definitions change through `lunnoa/` and the CLI.
 
 ## Hard rules
 
 - People sign in as Lunnoa users (`app/user-workflows.tsx`). Do not call Lunnoa
   with `LUNNOA_API_KEY` on their behalf.
-- `LUNNOA_API_KEY` is for CLI discovery, codegen, deploy, and pull/push only. Never put `lna_` keys
+- `LUNNOA_API_KEY` is for CLI discovery, codegen, deploy, status, pull and push only. Never put `lna_` keys
   in browser code, `'use client'` files, or `NEXT_PUBLIC_*` vars.
 - The deployment must allow this app's origin via `CORS_ALLOWED_ORIGINS`.
 - Never invent catalogue action ids; get them from `tools list` / `tools get <id> --json`.

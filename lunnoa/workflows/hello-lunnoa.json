@@ -1,0 +1,39 @@
+{
+  "$schema": "../../node_modules/@lunnoa/client/schemas/workflow.schema.json",
+  "kind": "workflow",
+  "format": "steps",
+  "slug": "hello-lunnoa",
+  "name": "Hello Lunnoa",
+  "description": "Example from the Lunnoa starter. Greets the name you enter. Replace it with your own workflows.",
+  "trigger": {
+    "id": "flow-control_trigger_manual",
+    "inputs": [
+      {
+        "id": "name",
+        "label": "Your name",
+        "required": {
+          "missingStatus": "warning",
+          "missingMessage": "Your name is required"
+        }
+      }
+    ],
+    "name": "Manually Run",
+    "description": "Start the workflow manually"
+  },
+  "steps": [
+    {
+      "key": "greeting",
+      "name": "Write greeting",
+      "use": {
+        "id": "text_action_concatenate"
+      },
+      "input": {
+        "texts": [
+          "Hello",
+          "={{step:trigger,name}}"
+        ],
+        "separator": ", "
+      }
+    }
+  ]
+}

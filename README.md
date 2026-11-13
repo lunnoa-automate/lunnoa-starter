@@ -2,7 +2,7 @@
 
 The quickest way to build your own app on top of [Lunnoa](https://lunnoa.com) with an AI coding agent (Claude Code, Cursor, Codex).
 
-It is deliberately small: a Next.js app that connects to your Lunnoa workspace and lists its workflows. Your coding agent adds the rest, guided by the Lunnoa skills that `npm install` puts into `.claude/skills/` and `.cursor/skills/`.
+It is deliberately small: a Next.js app that connects to your Lunnoa workspace, runs an example workflow that lives in this repo as a JSON file, and lists the workspace's workflows. Your coding agent adds the rest, guided by `AGENTS.md` and the Lunnoa skills that `npm install` puts into `.claude/skills/` and `.cursor/skills/`.
 
 ## Quick start
 
@@ -23,13 +23,23 @@ npm install
 | Variable | What it is |
 |---|---|
 | `LUNNOA_URL` | Your Lunnoa address. The app signs people in as Lunnoa users |
-| `LUNNOA_API_KEY` | An `lna_...` key for CLI commands only (discovery, codegen, deploy, pull, push). The running app does not use it |
+| `LUNNOA_API_KEY` | An `lna_...` key for CLI commands only (discovery, codegen, status, pull, push, deploy). Push needs a role that can create workflows and agents. The running app does not use it |
 
 Ask a Lunnoa admin to add the app's URL to `CORS_ALLOWED_ORIGINS`. People who are not in the workspace yet are added in Lunnoa (invite, SSO, or SCIM), then they sign in here.
 
 Run `npm run dev` and open http://localhost:3000. Sign in. If you see your workflows, you are connected.
 
-**3. Open the folder in your coding agent and describe your idea**
+**3. Try the example workflow**
+
+`lunnoa/workflows/hello-lunnoa.json` is a small workflow kept in code. Send it to Lunnoa:
+
+```bash
+npx lunnoa-client push
+```
+
+Reload the app. **Hello Lunnoa** now shows the badge **Synced with code**. Enter a name and press **Run** to see the greeting. Change the workflow in the Lunnoa UI and the badge turns into **Changed in UI, not yet in code** until you run `npx lunnoa-client pull` and push again.
+
+**4. Open the folder in your coding agent and describe your idea**
 
 For example: *"I want a page where our sales team sees open invoices and can approve them."* The agent interviews you, writes `BRIEF.md` for your approval, then builds it in small steps you can check.
 
@@ -57,9 +67,21 @@ Add that domain to Lunnoa's `CORS_ALLOWED_ORIGINS`.
 
 Coolify, Kubernetes and others work the same way: build the `Dockerfile`, set the env vars, expose port 3000. Vercel also works if you prefer it.
 
+## Project layout
+
+```text
+app/        pages and components: sign-in, run this app's workflows, list the workspace
+lib/        shared code: lunnoa.ts reads workflow files; codegen output goes here too
+lunnoa/     agent and workflow definitions synced with Lunnoa (agents/, workflows/, lunnoa.lock.json)
+BRIEF.md    the build brief your coding agent writes with you
+AGENTS.md   instructions for coding agents (CLAUDE.md is the same for Claude Code)
+```
+
+App code refers to agents and workflows by slug. `app/page.tsx` imports `lunnoa/workflows/hello-lunnoa.json`, builds the form from its inputs, finds the workflow in Lunnoa by slug as the signed-in user, runs it, and shows the output of its last step.
+
 ## Agent and workflow definitions
 
-Saved agents and workflows live in `lunnoa/` as JSON (`agents/<slug>.json`, `agents/<slug>.instructions.md`, `workflows/<slug>.json`). Commit `lunnoa/lunnoa.lock.json` with them.
+Saved agents and workflows live in `lunnoa/` as JSON (`agents/<slug>.json`, `agents/<slug>.instructions.md`, `workflows/<slug>.json`). Commit `lunnoa/lunnoa.lock.json` with them. Replace the example with your own workflows; deleting a file does not delete the workflow in Lunnoa.
 
 ```bash
 npx lunnoa-client status
@@ -79,6 +101,7 @@ A scheduled pull that opens a pull request, and a push when `main` changes, are 
 npm run dev                                   # local dev server
 npx lunnoa-client workflows list              # what's in your workspace (reads .env)
 npx lunnoa-client status                      # local files vs the UI
+npm run lunnoa:codegen                        # typed client in lib/lunnoa.generated.ts
 npx lunnoa-client tools list --for-agent      # catalogue actions you can use
 npx lunnoa-client --help                      # all SDK CLI commands
 ```
