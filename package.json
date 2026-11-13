@@ -11,7 +11,7 @@
     "postinstall": "lunnoa-client skills install"
   },
   "dependencies": {
-    "@lunnoa/client": "^1.5.0",
+    "@lunnoa/client": "^3.0.0",
     "next": "^16.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
