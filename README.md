@@ -23,7 +23,7 @@ npm install
 | Variable | What it is |
 |---|---|
 | `LUNNOA_URL` | Your Lunnoa address. The app signs people in as Lunnoa users |
-| `LUNNOA_API_KEY` | An `lna_...` key for CLI commands only (discovery, codegen, deploy). The running app does not use it |
+| `LUNNOA_API_KEY` | An `lna_...` key for CLI commands only (discovery, codegen, deploy, pull, push). The running app does not use it |
 
 Ask a Lunnoa admin to add the app's URL to `CORS_ALLOWED_ORIGINS`. People who are not in the workspace yet are added in Lunnoa (invite, SSO, or SCIM), then they sign in here.
 
@@ -57,11 +57,28 @@ Add that domain to Lunnoa's `CORS_ALLOWED_ORIGINS`.
 
 Coolify, Kubernetes and others work the same way: build the `Dockerfile`, set the env vars, expose port 3000. Vercel also works if you prefer it.
 
+## Agent and workflow definitions
+
+Saved agents and workflows live in `lunnoa/` as JSON (`agents/<slug>.json`, `agents/<slug>.instructions.md`, `workflows/<slug>.json`). Commit `lunnoa/lunnoa.lock.json` with them.
+
+```bash
+npx lunnoa-client status
+npx lunnoa-client pull
+npx lunnoa-client push
+```
+
+`status` before you edit. `pull` before you `push`. `--force` overwrites one side. Ask before you use it.
+
+A TypeScript file is only for a definition that needs code. `npx lunnoa-client agents deploy` and `workflows deploy` on a `.ts` file lock that resource in the UI. A `.json` path is a push.
+
+A scheduled pull that opens a pull request, and a push when `main` changes, are written up in the docs: [Sync agents and workflows with the UI](https://docs.lunnoa.com/guides/develop/client/sync). This starter does not include that workflow. A new repository would fail until the secrets exist.
+
 ## Useful commands
 
 ```bash
 npm run dev                                   # local dev server
 npx lunnoa-client workflows list              # what's in your workspace (reads .env)
+npx lunnoa-client status                      # local files vs the UI
 npx lunnoa-client tools list --for-agent      # catalogue actions you can use
 npx lunnoa-client --help                      # all SDK CLI commands
 ```

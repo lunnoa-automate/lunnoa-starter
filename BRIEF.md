@@ -19,6 +19,8 @@
 
 ## Workflows/agents
 
+<!-- JSON in lunnoa/ (pull, push, status). Commit lunnoa/lunnoa.lock.json. TypeScript define* only when the definition needs code. CI recipe: https://docs.lunnoa.com/guides/develop/client/sync -->
+
 | Kind | Name / slug | Reuse or create | Notes |
 |---|---|---|---|
 
