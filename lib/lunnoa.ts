@@ -1,4 +1,4 @@
-import { defineWorkflow, type WorkflowStepsFileDefinition } from '@lunnoa/client';
+import { defineAgent, defineWorkflow, type AgentFileInput, type WorkflowStepsFileDefinition } from '@lunnoa/client';
 
 /** A workflow from `lunnoa/workflows/` as plain data a client component can take as props. */
 export interface AppWorkflow {
@@ -9,6 +9,29 @@ export interface AppWorkflow {
   inputs: Array<{ id: string; label: string; inputType: string; required: boolean; options?: string[] }>;
   /** Key of the last step. The page shows its output. */
   resultKey?: string;
+}
+
+/** An agent from `lunnoa/agents/` as plain data a client component can take as props. */
+export interface AppAgent {
+  slug: string;
+  name: string;
+  description?: string;
+  /** `settings.suggestedPrompts` from the file, shown as one-click chat messages. */
+  prompts: string[];
+}
+
+/**
+ * Reads an agent definition file. JSON imports lose the file-shape literal, so the file is
+ * passed as `unknown`; `defineAgent` checks it at runtime. The prompt stays in the markdown file.
+ */
+export function appAgent(file: unknown): AppAgent {
+  const definition = defineAgent(file as AgentFileInput);
+  return {
+    slug: definition.slug,
+    name: definition.name,
+    description: definition.description,
+    prompts: (definition.settings?.suggestedPrompts ?? []).filter((prompt) => prompt.trim().length > 0),
+  };
 }
 
 /**

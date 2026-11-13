@@ -1,25 +1,34 @@
 'use client';
 
-import { isLoginRequires2FA, type Workflow } from '@lunnoa/client';
+import { isLoginRequires2FA, type Agent, type Workflow } from '@lunnoa/client';
 import { LunnoaAuthProvider, useLunnoaAuth } from '@lunnoa/client/react';
 import { useEffect, useState, type FormEvent } from 'react';
 
-import type { AppWorkflow } from '@/lib/lunnoa';
+import type { AppAgent, AppWorkflow } from '@/lib/lunnoa';
 
+import { ChatAgent } from './chat-agent';
 import { RunWorkflow } from './run-workflow';
 import { ErrorNote, WorkflowList } from './workflow-list';
 
 /** The browser signs in as a Lunnoa user and calls Lunnoa directly with their JWT. */
-export function UserWorkflows({ baseUrl, appWorkflows }: { baseUrl: string; appWorkflows: AppWorkflow[] }) {
+export function UserWorkflows({
+  baseUrl,
+  appWorkflows,
+  appAgents,
+}: {
+  baseUrl: string;
+  appWorkflows: AppWorkflow[];
+  appAgents: AppAgent[];
+}) {
   if (!baseUrl) return <ErrorNote message="Set LUNNOA_URL in .env (see .env.example)." />;
   return (
     <LunnoaAuthProvider baseUrl={baseUrl}>
-      <Session appWorkflows={appWorkflows} />
+      <Session appWorkflows={appWorkflows} appAgents={appAgents} />
     </LunnoaAuthProvider>
   );
 }
 
-function Session({ appWorkflows }: { appWorkflows: AppWorkflow[] }) {
+function Session({ appWorkflows, appAgents }: { appWorkflows: AppWorkflow[]; appAgents: AppAgent[] }) {
   const { status, user, logout } = useLunnoaAuth();
   if (status === 'loading') return <p className="text-sm text-neutral-500">Loading…</p>;
   if (status === 'unauthenticated') return <LoginForm />;
@@ -31,24 +40,39 @@ function Session({ appWorkflows }: { appWorkflows: AppWorkflow[] }) {
           Sign out
         </button>
       </div>
-      <Workflows appWorkflows={appWorkflows} />
+      <Workspace appWorkflows={appWorkflows} appAgents={appAgents} />
     </div>
   );
 }
 
-function Workflows({ appWorkflows }: { appWorkflows: AppWorkflow[] }) {
+function Workspace({ appWorkflows, appAgents }: { appWorkflows: AppWorkflow[]; appAgents: AppAgent[] }) {
   const { client } = useLunnoaAuth();
   const [workflows, setWorkflows] = useState<Workflow[] | null>(null);
+  const [agents, setAgents] = useState<Agent[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    client.workflows
-      .list({ expansion: ['description', 'isActive', 'slug', 'codeSyncStatus'] })
-      .then(setWorkflows, (err: unknown) => setError(err instanceof Error ? err.message : String(err)));
+    let cancelled = false;
+    Promise.all([
+      client.workflows.list({ expansion: ['description', 'isActive', 'slug', 'codeSyncStatus'] }),
+      client.agents.list({ expansion: ['description', 'slug', 'codeSyncStatus'] }),
+    ]).then(
+      ([nextWorkflows, nextAgents]) => {
+        if (cancelled) return;
+        setWorkflows(nextWorkflows);
+        setAgents(nextAgents);
+      },
+      (err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
   }, [client]);
 
   if (error) return <ErrorNote message={error} />;
-  if (!workflows) return <p className="text-sm text-neutral-500">Loading workflows…</p>;
+  if (!workflows || !agents) return <p className="text-sm text-neutral-500">Loading…</p>;
   return (
     <div className="space-y-8">
       <section className="space-y-3">
@@ -59,6 +83,12 @@ function Workflows({ appWorkflows }: { appWorkflows: AppWorkflow[] }) {
             definition={definition}
             workflow={workflows.find((workflow) => workflow.slug === definition.slug)}
           />
+        ))}
+      </section>
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold">This app&apos;s agents</h2>
+        {appAgents.map((definition) => (
+          <ChatAgent key={definition.slug} definition={definition} agent={agents.find((agent) => agent.slug === definition.slug)} />
         ))}
       </section>
       <section className="space-y-3">
