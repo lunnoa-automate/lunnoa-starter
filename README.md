@@ -2,7 +2,7 @@
 
 The quickest way to build your own app on top of [Lunnoa](https://lunnoa.com) with an AI coding agent (Claude Code, Cursor, Codex).
 
-It is deliberately small: a Next.js app that connects to your Lunnoa workspace, runs an example workflow that lives in this repo as a JSON file, and lists the workspace's workflows. Your coding agent adds the rest, guided by `AGENTS.md` and the Lunnoa skills that `npm install` puts into `.claude/skills/` and `.cursor/skills/`.
+It is deliberately small: a Next.js app that connects to your Lunnoa workspace, runs an example workflow, chats with an example agent, and lists the workspace's workflows. The workflow and the agent live in this repo as JSON. Your coding agent adds the rest, guided by `AGENTS.md` and the Lunnoa skills that `npm install` puts into `.claude/skills/` and `.cursor/skills/`.
 
 ## Quick start
 
@@ -29,15 +29,17 @@ Ask a Lunnoa admin to add the app's URL to `CORS_ALLOWED_ORIGINS`. People who ar
 
 Run `npm run dev` and open http://localhost:3000. Sign in. If you see your workflows, you are connected.
 
-**3. Try the example workflow**
+**3. Try the examples**
 
-`lunnoa/workflows/hello-lunnoa.json` is a small workflow kept in code. Send it to Lunnoa:
+`lunnoa/workflows/hello-lunnoa.json` is a small workflow kept in code, and `lunnoa/agents/greeter.json` is a small agent (its prompt is `greeter.instructions.md`). Send both to Lunnoa:
 
 ```bash
 npx lunnoa-client push
 ```
 
-Reload the app. **Hello Lunnoa** now shows the badge **Synced with code**. Enter a name and press **Run** to see the greeting. Change the workflow in the Lunnoa UI and the badge turns into **Changed in UI, not yet in code** until you run `npx lunnoa-client pull` and push again.
+Reload the app. **Hello Lunnoa** and **Greeter** show the badge **Synced with code**. Enter a name and press **Run** to see the greeting. Press **Say hello** to chat with Greeter. Change either one in the Lunnoa UI and its badge turns into **Changed in UI, not yet in code** until you run `npx lunnoa-client pull` and push again.
+
+The first push fills in this workspace's model connection and rewrites `greeter.json`. Commit that file with `lunnoa/lunnoa.lock.json`. The connection id in it belongs to this deployment.
 
 **4. Open the folder in your coding agent and describe your idea**
 
@@ -70,18 +72,18 @@ Coolify, Kubernetes and others work the same way: build the `Dockerfile`, set th
 ## Project layout
 
 ```text
-app/        pages and components: sign-in, run this app's workflows, list the workspace
-lib/        shared code: lunnoa.ts reads workflow files; codegen output goes here too
+app/        pages and components: sign-in, run this app's workflows, chat with its agents, list the workspace
+lib/        shared code: lunnoa.ts reads definition files; codegen output goes here too
 lunnoa/     agent and workflow definitions synced with Lunnoa (agents/, workflows/, lunnoa.lock.json)
 BRIEF.md    the build brief your coding agent writes with you
 AGENTS.md   instructions for coding agents (CLAUDE.md is the same for Claude Code)
 ```
 
-App code refers to agents and workflows by slug. `app/page.tsx` imports `lunnoa/workflows/hello-lunnoa.json`, builds the form from its inputs, finds the workflow in Lunnoa by slug as the signed-in user, runs it, and shows the output of its last step.
+App code refers to agents and workflows by slug. `app/page.tsx` imports `lunnoa/workflows/hello-lunnoa.json` and `lunnoa/agents/greeter.json`. The signed-in page finds each one in Lunnoa by slug, runs the workflow, and chats with the agent.
 
 ## Agent and workflow definitions
 
-Saved agents and workflows live in `lunnoa/` as JSON (`agents/<slug>.json`, `agents/<slug>.instructions.md`, `workflows/<slug>.json`). Commit `lunnoa/lunnoa.lock.json` with them. Replace the example with your own workflows; deleting a file does not delete the workflow in Lunnoa.
+Saved agents and workflows live in `lunnoa/` as JSON (`agents/<slug>.json`, `agents/<slug>.instructions.md`, `workflows/<slug>.json`). Commit `lunnoa/lunnoa.lock.json` with them. Replace the examples with your own agents and workflows; deleting a file does not delete the agent or workflow in Lunnoa.
 
 ```bash
 npx lunnoa-client status

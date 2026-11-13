@@ -1,0 +1,16 @@
+{
+  "$schema": "../../node_modules/@lunnoa/client/schemas/agent.schema.json",
+  "kind": "agent",
+  "slug": "greeter",
+  "name": "Greeter",
+  "description": "Example from the Lunnoa starter. Replies with one short sentence. Replace it with your own agents.",
+  "model": "deepseek-ai/DeepSeek-V4-Pro",
+  "instructions": {
+    "file": "greeter.instructions.md"
+  },
+  "settings": {
+    "suggestedPrompts": [
+      "Say hello"
+    ]
+  }
+}

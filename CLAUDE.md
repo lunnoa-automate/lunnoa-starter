@@ -9,21 +9,22 @@ with `@lunnoa/client`. The human may not be a developer: explain in plain langua
   It copies the Lunnoa skills that match the installed SDK version.
 - If `.env` is missing, copy `.env.example` to `.env` and ask the human for the values.
 - If `lunnoa/lunnoa.lock.json` is missing, nothing was pushed from this repo yet.
-  `npx lunnoa-client push` creates the example workflow so the app's Run button works.
+  `npx lunnoa-client push` creates the example workflow and the example agent, so Run and chat work.
 
 ## Project layout
 
 ```text
 app/                         Next.js pages and components (your app code)
-  page.tsx                   imports the workflow files this app runs
-  user-workflows.tsx         sign-in as a Lunnoa user, workspace workflows with their sync badge
+  page.tsx                   imports the workflow and agent files this app uses
+  user-workflows.tsx         sign-in as a Lunnoa user, then this app's workflows and agents
   run-workflow.tsx           runs a workflow from lunnoa/ by slug, form built from its trigger inputs
+  chat-agent.tsx             chats with an agent from lunnoa/ by slug
   workflow-list.tsx          workflow list and the sync badge
 lib/
-  lunnoa.ts                  turns a workflow file into props for client components
+  lunnoa.ts                  turns a workflow or agent file into props for client components
   lunnoa.generated.ts        typed client from `npm run lunnoa:codegen` (when you need it)
 lunnoa/                      agent and workflow definitions, synced with Lunnoa
-  agents/<slug>.json         one agent; its prompt is in <slug>.instructions.md
+  agents/<slug>.json         one agent; greeter.json is an example. Its prompt is in <slug>.instructions.md
   workflows/<slug>.json      one workflow; hello-lunnoa.json is an example to replace
   lunnoa.lock.json           written by the first push or pull; commit it
 BRIEF.md                     the build brief you write with the human
@@ -47,14 +48,16 @@ Codegen goes to `lib/` (`npm run lunnoa:codegen`), not `src/lunnoa`.
    - agents and workflows as JSON in `lunnoa/` (see "Agents and workflows"), then `npx lunnoa-client push`;
    - app code in `app/` that uses them by slug (see "Use a definition in app code").
 5. End each slice with a plain-language check the human can do (e.g. "open the app, enter a
-   name, press Run, and you should see Hello, Ada").
+   name, press Run, and you should see Hello, Ada" or "say hello to Greeter and you should
+   see one short sentence").
 
 ## Agents and workflows
 
-Keep agent and workflow definitions in `lunnoa/` as JSON. Start from the shape of
-`lunnoa/workflows/hello-lunnoa.json`. Its `$schema` line gives the editor validation.
+Keep agent and workflow definitions in `lunnoa/` as JSON. Start from
+`lunnoa/workflows/hello-lunnoa.json` and `lunnoa/agents/greeter.json`. The `$schema` line gives the editor validation.
 
 - Take catalogue ids from `tools list` / `tools get <id> --json` and model ids from `ai-connections list --json`. Never invent them.
+- `greeter.json` sets `model` to the Lunnoa platform default (`deepseek-ai/DeepSeek-V4-Pro`) and leaves out `aiConnection`. The first push attaches this workspace's connection and rewrites the file with the stored settings. Commit that rewrite. It contains a connection id for this deployment only.
 - Give every step a `key`. Later steps and the app read its output with `={{step:<key>,…}}` or by that key. Trigger inputs are `={{step:trigger,<input id>}}`.
 - An agent's prompt goes in `lunnoa/agents/<slug>.instructions.md`; the JSON holds `"instructions": { "file": "<slug>.instructions.md" }`.
 - Run `npx lunnoa-client status` before editing, and `npx lunnoa-client pull` before `npx lunnoa-client push`.
@@ -66,16 +69,24 @@ Keep agent and workflow definitions in `lunnoa/` as JSON. Start from the shape o
 
 ## Use a definition in app code
 
-The example follows this pattern. Copy it for new workflows.
+Copy these two patterns. Ids differ per deployment, so the app finds the resource by slug.
+Never hard-code an id. Never upsert or push from the app. Definitions change through `lunnoa/` and the CLI.
+
+### Workflow
 
 1. Import the file in a server component and turn it into props: `appWorkflow(file)` from
    `lib/lunnoa.ts` (`app/page.tsx`). It reads the slug, the Manually Run inputs and the last step's key.
 2. In the client, list workflows with the signed-in user's session
-   (`expansion: ['slug', 'codeSyncStatus']`) and find the one with that slug. Ids differ per
-   deployment. Never hard-code them.
+   (`expansion: ['slug', 'codeSyncStatus']`) and find the one with that slug.
 3. Run it with `client.workflows.executeAndWait(id, inputs, { expansion: ['nodes'] })` and read the
    step output by `key` from `execution.nodes` (`app/run-workflow.tsx`).
-4. Never upsert or push from the app. Definitions change through `lunnoa/` and the CLI.
+
+### Agent
+
+1. Import the file and turn it into props with `appAgent(file)` (`app/page.tsx`). It reads the slug
+   and `settings.suggestedPrompts`.
+2. List agents with the same session (`expansion: ['slug', 'codeSyncStatus']`) and find the one with that slug.
+3. Chat with `useAgentChat(agent.id)` from `@lunnoa/client/react` (`app/chat-agent.tsx`). The first message creates the task.
 
 ## Hard rules
 
