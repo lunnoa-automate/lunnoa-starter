@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "lunnoa:codegen": "lunnoa-client codegen --out ./lib",
     "postinstall": "lunnoa-client skills install"
   },
   "dependencies": {
