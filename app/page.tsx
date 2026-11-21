@@ -1,4 +1,5 @@
-import { appWorkflow } from '@/lib/lunnoa';
+import { appAgent, appWorkflow } from '@/lib/lunnoa';
+import greeter from '@/lunnoa/agents/greeter.json';
 import helloLunnoa from '@/lunnoa/workflows/hello-lunnoa.json';
 
 import { UserWorkflows } from './user-workflows';
@@ -6,8 +7,9 @@ import { UserWorkflows } from './user-workflows';
 // Read env at request time so one Docker image works with any deployment URL.
 export const dynamic = 'force-dynamic';
 
-// Workflows this app runs: one import per file in lunnoa/workflows, found in Lunnoa by slug.
+// One import per file in lunnoa/. The signed-in page finds each one in Lunnoa by slug.
 const appWorkflows = [appWorkflow(helloLunnoa)];
+const appAgents = [appAgent(greeter)];
 
 export default function Home() {
   return (
@@ -15,10 +17,11 @@ export default function Home() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold">Lunnoa starter</h1>
         <p className="text-sm text-neutral-500">
-          Sign in with your Lunnoa account to run this app&apos;s workflows and see the rest of your workspace.
+          Sign in with your Lunnoa account to run this app&apos;s workflows, chat with its agents, and see the rest of
+          your workspace.
         </p>
       </header>
-      <UserWorkflows baseUrl={process.env.LUNNOA_URL ?? ''} appWorkflows={appWorkflows} />
+      <UserWorkflows baseUrl={process.env.LUNNOA_URL ?? ''} appWorkflows={appWorkflows} appAgents={appAgents} />
     </main>
   );
 }
